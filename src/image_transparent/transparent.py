@@ -4,7 +4,7 @@ import numpy as np
 import sys
 import os
 
-def convert_png_to_ico(input_path, output_path, make_transparent=True):
+def convert_image(input_path, output_path, make_transparent=True):
     try:
         img = Image.open(input_path).convert("RGBA")
     except Exception as e:
@@ -19,22 +19,36 @@ def convert_png_to_ico(input_path, output_path, make_transparent=True):
         data[..., 3][white_areas.T] = 0
         img = Image.fromarray(data)
 
-    img.save(output_path, format="ICO", sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)])
+    # Determine output format from extension
+    output_ext = output_path.split('.')[-1].lower()
+
+    if output_ext in ['jpg', 'jpeg']:
+        # JPEG doesn't support alpha channel.
+        # If the image has an alpha channel, paste it onto a white background.
+        if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
+            background = Image.new("RGB", img.size, (255, 255, 255))
+            # Some modes might not split properly, so ensure it's RGBA before splitting
+            img_rgba = img.convert("RGBA")
+            background.paste(img_rgba, mask=img_rgba.split()[3]) # alpha channel is the mask
+            img = background
+        else:
+            img = img.convert("RGB")
+
+    # If it's an ICO we specify sizes, otherwise let Pillow handle it based on format
+    if output_ext == 'ico':
+        img.save(output_path, format="ICO", sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)])
+    else:
+        img.save(output_path)
     print(f"Successfully converted {input_path} to {output_path}")
 
 def main():
-    parser = argparse.ArgumentParser(description="Convert PNG/JPG to ICO with optional background transparency.")
+    parser = argparse.ArgumentParser(description="Convert images between formats with optional background transparency.")
     parser.add_argument("input", help="Path to the input image")
-    parser.add_argument("-o", "--output", help="Path to the output ICO image (default: same directory as input)", default=None)
+    parser.add_argument("-o", "--output", help="Path to the output image", required=True)
     parser.add_argument("--no-transparent", action="store_true", help="Do not make white background transparent")
     args = parser.parse_args()
     
-    if args.output is None:
-        input_dir = os.path.dirname(os.path.abspath(args.input))
-        input_filename = os.path.splitext(os.path.basename(args.input))[0]
-        args.output = os.path.join(input_dir, f"{input_filename}.ico")
-        
-    convert_png_to_ico(args.input, args.output, make_transparent=not args.no_transparent)
+    convert_image(args.input, args.output, make_transparent=not args.no_transparent)
 
 if __name__ == "__main__":
     main()
