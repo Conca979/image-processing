@@ -1,7 +1,7 @@
 [project]
-name = "image-transparent"
+name = "image-processing"
 version = "0.1.0"
-description = "Add your description here"
+description = "General Image Processing and Computer Vision Toolkit"
 readme = "README.md"
 authors = [
     { name = "Duong", email = "tn7956666@gail.com" }
@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-image-transparent = "image_transparent:main"
+image-processing = "image_processing.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.12.3,<0.13.0"]
